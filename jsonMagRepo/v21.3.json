@@ -1,8 +1,8 @@
 {
   "app": {
-    "version": "21.3",
+    "version": "8.0.6",
     "versionCode": "21300",
-    "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.0/Magisk-v22.0.apk"
+    "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/21.3/MagiskManager-v8.0.6.apk"
   },
   "stub": {
     "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/21.3/stub-release.apk"
