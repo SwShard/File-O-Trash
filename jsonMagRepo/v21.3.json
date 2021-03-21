@@ -1,7 +1,7 @@
 {
   "app": {
     "version": "21.3",
-    "versionCode": "22000",
+    "versionCode": "21300",
     "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.0/Magisk-v22.0.apk"
   },
   "stub": {
@@ -12,7 +12,7 @@
   },
   "magisk": {
     "version": "21.3",
-    "versionCode": "22000",
+    "versionCode": "21300",
     "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/21.3/Magisk-v21.3.zip",
     "md5": "796981015E4EB7278703AAD77B4476FE"
   }
