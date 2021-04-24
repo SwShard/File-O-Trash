@@ -2,12 +2,12 @@
   "app": {
     "version": "22.1",
     "versionCode": "22100",
-    "link": "https://raw.githubusercontent.com/Dark-ST-Phantom/File-O-Trash/main/MagiskBkp/22.1/Magisk-v22.1.apk",
-    "note": "https://raw.githubusercontent.com/Dark-ST-Phantom/File-O-Trash/main/MagiskBkp/22.1/22100.md"
+    "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.1/Magisk-v22.1.apk",
+    "note": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.1/22100.md"
   },
   "stub": {
     "versionCode": "20",
-    "link": "https://raw.githubusercontent.com/Dark-ST-Phantom/File-O-Trash/main/MagiskBkp/22.1/stub-release.apk"
+    "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.1/stub-release.apk"
   },
   "uninstaller": {
     "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/21.4/Magisk-uninstaller-20210117.zip"
@@ -15,8 +15,8 @@
   "magisk": {
     "version": "22.1",
     "versionCode": "22100",
-    "link": "https://raw.githubusercontent.com/Dark-ST-Phantom/File-O-Trash/main/MagiskBkp/22.1/Magisk-v22.1.apk",
-    "note": "https://raw.githubusercontent.com/Dark-ST-Phantom/File-O-Trash/main/MagiskBkp/22.1/22100.md",
+    "link": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.1/Magisk-v22.1.apk",
+    "note": "https://github.com/Dark-ST-Phantom/File-O-Trash/raw/main/MagiskBkp/22.1/22100.md",
     "md5": ""
   }
 }
