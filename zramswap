@@ -1,0 +1,391 @@
+#!/bin/sh 
+#
+# МОДИФИЦИРОВАННАЯ ВЕРСИЯ
+# MY TODO:
+#   * Перепроверить функции start и stop на корректность кода
+#   * Переделать функцию config и status на обновлённый код скрипта
+#   Необязательно:
+#       - ? Сделать новую функцию определения вида ZRAM (Модуль, Вшитый или Отсутствует) ?
+#
+# TODO:
+# * Migrate to using zramctl from util-linux for the setup,
+#   (this will close debian bug #917643):
+#   then also:
+#   - add option for compression algorythm
+#   - ammount of compression streams
+#   - Make use of the zramctl stats too
+
+PREMODZRAM=$(cat /lib/modules/$(uname -r)/modules.dep | grep zram.ko | tr -d ":") > /dev/null 2>&1
+MODZRAM=$(find /lib/modules/$(uname -r)/$PREMODZRAM -type f) > /dev/null 2>&1
+CORES=$(grep -c ^processor /proc/cpuinfo) > /dev/null 2>&1
+#echo $MODZRAM
+if [ -f /system/bin/sh ]; then
+    DEVZR="/dev/block"
+else
+    DEVZR="/dev"
+fi
+#echo $DEVZR
+
+## Функция автоматической настройки
+start () {
+    [ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
+
+    if [ -f "$MODZRAM" ]; then
+        echo
+        echo "Файл модуля ZRAM обнаружен"
+        echo
+        echo "Запущен скрипт оптимальной настройки ZRAM"
+        sleep 3
+
+        echo
+        echo "Остановка процесса ZRAM, если уже запущен"
+        echo "[Может занять некоторое время]"
+        for swapspace in $(swapon -s | awk '/zram/{print $1}'); do
+            swapoff $swapspace
+        done
+        modprobe -r zram
+        sleep 2
+
+        echo
+        echo "Настройка нового процесса ZRAM"
+        ##Set some defaults:
+        #Автоматическое выделение на основе физической оперативной памяти
+        #ALLOCATION=$(awk '/MemTotal/{print $2}' /proc/meminfo) # Количество выделенной памяти в ZRAM, в KBytes
+
+        #Ручное выделение памяти
+        ALLOCATION=$(( 4 * 1024 * 1024 ))
+
+        echo "Выделение" $(( ALLOCATION / 1024 )) "MBytes памяти"
+        PRIORITY=98     # Приоритет SWAP, смотри swapon(2) для деталей
+        SWAPPINESS=100    # Свободная память, при которой ZRAM используется
+
+        ## Определение количества ядер, выставит 1 если не удастся определить
+        if [ ! -f /proc/cpuinfo ]; then
+            echo "ВНИМАНИЕ: Не удалось найти /proc/cpuinfo, proc подключен?"
+            echo "         Используется одно ядро для zramswap..."
+            CORES=1
+        else
+            if [ "$CORES" -gt "4" ]; then
+                CORES=$(($CORES / 2))
+            else
+                CORES=$CORES
+            fi
+        fi
+
+#        # Переопределение из файла конфигурации, если он существует
+#        if [ -f /etc/default/zramswap ]; then
+#            . /etc/default/zramswap
+#        fi
+
+#        if [ -n "$PERCENTAGE" ]; then
+#            totalmemory=$(awk '/MemTotal/{print $2}' /proc/meminfo) # in KiB
+#            ALLOCATION=$((totalmemory * 1024 * $PERCENTAGE / 100))
+#        fi
+
+        ## Определение количества ZRAM устройств
+        modprobe zram num_devices=$CORES
+
+        ## Выделение памяти для ZRAM, настройка swap и активация
+        ## Decrementing $CORE, because cores start counting at 0
+        for CORE in $(seq 0 $(($CORES - 1))); do
+            echo lz4 > /sys/block/zram$CORE/comp_algorithm
+            echo $(($ALLOCATION / $CORES))"K" > /sys/block/zram$CORE/disksize
+            echo $SWAPPINESS > /proc/sys/vm/swappiness
+            sleep 2
+            echo
+            echo "Запуск процессов ZRAM"
+            mkswap $DEVZR/zram$CORE
+            swapon -p $PRIORITY $DEVZR/zram$CORE
+        done
+        echo
+        echo "Выполнение завершено. ZRAM запущен"
+        echo
+
+    elif [ -d /sys/block/zram0 ]; then
+        echo
+        echo "Файл модуля ZRAM не найден, значит вшит в ядро"
+        echo
+        echo "Запущен скрипт оптимальной настройки ZRAM"
+        sleep 2
+
+        echo
+        echo "Остановка процесса ZRAM, если уже запущен"
+        echo "[Может занять некоторое время]"
+        swapoff $DEVZR/zram0 > /dev/null 2>&1
+        echo '1' > /sys/block/zram0/reset
+        sleep 2
+
+        echo
+        echo "Настройка нового процесса ZRAM"
+        ##Set some defaults:
+        #Автоматическое выделение на основе физической оперативной памяти
+        #ALLOCATION=$(awk '/MemTotal/{print $2}' /proc/meminfo) # Количество выделенной памяти в ZRAM, в KBytes
+
+        #Ручное выделение памяти
+        ALLOCATION=$(( 4 * 1024 * 1024 ))
+
+        PRIORITY=98    # Приоритет SWAP, смотри swapon(2) для деталей
+        SWAPPINESS=100    # Свободная память, при которой ZRAM используется
+        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 )) "MBytes, SWAPPINESS=95, PRIORITY=98]"
+
+        echo lz4 > /sys/block/zram0/comp_algorithm
+        echo $ALLOCATION"K" > /sys/block/zram0/disksize
+        echo $SWAPPINESS > /proc/sys/vm/swappiness
+        sleep 2
+
+        echo
+        echo "Запуск процесса ZRAM"
+        mkswap $DEVZR/zram0 > /dev/null 2>&1
+        swapon -p $PRIORITY $DEVZR/zram0 > /dev/null 2>&1
+        sleep 2
+
+        echo
+        echo "Выполнение завершено. ZRAM запущен"
+        echo
+    else
+        echo "Модуль ZRAM не обнаружен. Ядро поддерживает ZRAM?"
+    fi
+}
+## end
+
+
+## Функция ручной настройки
+config () {
+    [ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
+
+    if [ -f "$MODZRAM" ]; then
+        echo
+        echo "Запущен скрипт ручной настройки ZRAM"
+        echo "[Если скрипт запущен по ошибке, используйте CTRL+C для отмены]"
+        sleep 3
+        echo
+        echo "Требуется ввести некоторые параметры"
+        sleep 2
+
+        #Параметры настройки zram
+        echo
+        echo "Введите значение DISKSIZE, в GBytes (Рекомендуется не меньше 4):"
+        echo "[Справка: DISKSIZE - Это значение, определяющее количество памяти в ZRAM]"
+        read MEM
+        echo "Выбрано значение:" $MEM "GBytes"
+        sleep 2
+
+        echo
+        echo "Введите значение SWAPPINESS (Рекомендуется 60-90):"
+        echo "[Справка: SWAPPINESS - Это процент СВОБОДНОЙ оперативной памяти, при котором система использует ZRAM]"
+        read SPNS
+        echo Выбрано значение: $SPNS
+        sleep 2
+
+        echo
+        echo "Остановка процесса ZRAM, если уже запущен"
+        echo "[Может занять некоторое время]"
+        for swapspace in $(swapon -s | awk '/zram/{print $1}'); do
+            swapoff $swapspace
+        done
+        modprobe -r zram
+
+        echo
+        echo "Настройка нового процесса ZRAM"
+        ##Set some defaults:
+        ALLOCATION=$MEM # Количество выделенной памяти в ZRAM, в GBytes
+        PRIORITY=100   # Swap priority, see swapon(2) for more details
+        SWAPPINESS=$SPNS    # Свободная память, при которой ZRAM используется
+
+        ## Определение количества ядер, выставит 1 если не удастся определить
+        if [ ! -f /proc/cpuinfo ]; then
+            echo "ВНИМАНИЕ: Не удалось найти /proc/cpuinfo, proc подключен?"
+            echo "         Используется одно ядро для zramswap..."
+            CORES=1
+        else
+            if [ "$CORES" -gt "4" ]; then
+                CORES=$(($CORES / 2))
+            else
+                CORES=$CORES
+            fi
+        fi
+
+        ALLOCATION=$((ALLOCATION * 1024 * 1024)) # преобразование суммы из GByte в KByte
+
+        if [ -n "$PERCENTAGE" ]; then
+            totalmemory=$(awk '/MemTotal/{print $2}' /proc/meminfo) # in KBytes
+            ALLOCATION=$((totalmemory * $PERCENTAGE / 100))
+        fi
+
+        ## Определение количества ZRAM устройств
+        modprobe zram num_devices=$CORES
+
+        ## Выделение памяти для ZRAM, настройка swap и активация
+        ## Уменьшение $CORE, поскольку количество ядер отсчитывается с 0
+        for CORE in $(seq 0 $(($CORES - 1))); do
+            echo lz4 > /sys/block/zram$CORE/comp_algorithm
+            echo $(($ALLOCATION / $CORES))"K" > /sys/block/zram$CORE/disksize
+            echo $SWAPPINESS > /proc/sys/vm/swappiness
+            sleep 2
+
+            echo
+            echo "Запуск процессов ZRAM"
+            mkswap $DEVZR/zram$CORE
+            swapon -p $PRIORITY $DEVZR/zram$CORE
+        done
+        echo "Выполнение завершено. ZRAM запущен"
+        echo
+
+    elif [ -d /sys/block/zram0 ]; then
+        echo
+        echo "Запущен скрипт ручной настройки ZRAM"
+        echo "[Если скрипт запущен по ошибке, используйте CTRL+C для отмены]"
+        sleep 3
+
+        echo
+        echo "Требуется ввести некоторые параметры"
+        sleep 2
+
+        #Параметры настройки zram
+        echo
+        echo "Введите значение DISKSIZE, в GBytes (Рекомендуется не меньше 4):"
+        echo "[Справка: DISKSIZE - Это значение, определяющее количество памяти в ZRAM]"
+        read MEM
+        echo "Выбрано значение:" $MEM "GBytes"
+        sleep 2
+
+        echo
+        echo "Введите значение SWAPPINESS (Рекомендуется 60-90):"
+        echo "[Справка: SWAPPINESS - Это процент СВОБОДНОЙ оперативной памяти, при котором система использует ZRAM]"
+        read SPNS
+        echo Выбрано значение: $SPNS
+        sleep 2
+
+        echo
+        echo "Остановка процесса ZRAM, если уже запущен"
+        echo "[Может занять некоторое время]"
+        swapoff $DEVZR/zram0 > /dev/null 2>&1
+        echo '1' > /sys/block/zram0/reset
+        echo '0' > /sys/block/zram0/disksize
+        sleep 2
+
+        echo
+        echo "Настройка нового процесса ZRAM"
+        ##Set some defaults:
+        ALLOCATION=$MEM    # Количество выделенной памяти в ZRAM, в GBytes
+        PRIORITY=100    # Приоритет SWAP, смотри swapon(2) для деталей
+        SWAPPINESS=$SPNS    # Свободная память, при которой ZRAM используется
+
+        echo lz4 > /sys/block/zram0/comp_algorithm
+        echo $ALLOCATION"G" > /sys/block/zram0/disksize
+        echo $SWAPPINESS > /proc/sys/vm/swappiness
+
+        echo
+        echo "Запуск процесса ZRAM"
+        mkswap $DEVZR/zram0 > /dev/null 2>&1
+        swapon -p $PRIORITY $DEVZR/zram0 > /dev/null 2>&1
+
+        echo
+        echo "Выполнение завершено. ZRAM запущен"
+        echo
+    else
+        echo "Модуль ZRAM не обнаружен. Ядро поддерживает ZRAM?"
+    fi
+}
+## end
+
+
+## Отключение ZRAM
+stop () {
+    [ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
+
+    if [ -f "$MODZRAM" ]; then
+        if [ $(lsmod | grep zram | wc -l) -gt 0 ]; then
+            echo
+            echo "Запущен скрипт остановки ZRAM"
+            echo "[Процесс может занять некоторое время]"
+            for swapspace in $(swapon -s | awk '/zram/{print $1}'); do
+                swapoff $swapspace
+            done
+            modprobe -r zram
+            echo "Выполнение завершено. ZRAM отключен"
+            echo
+        else
+            echo
+            echo "ZRAM уже отключен"
+            echo
+        fi
+
+    elif [ -d /sys/block/zram0 ]; then
+        echo
+        echo "Запущен скрипт остановки ZRAM"
+        echo "[Процесс может занять некоторое время]"
+        swapoff $DEVZR/zram0 > /dev/null 2>&1
+        echo '1' > /sys/block/zram0/reset
+        echo '0' > /sys/block/zram0/disksize
+        sleep 2
+
+        echo
+        echo "Выполнение завершено. ZRAM отключен"
+        echo
+    else
+        echo "Модуль ZRAM не обнаружен. Ядро поддерживает ZRAM?"
+    fi
+}
+## end
+
+
+## Показывает текущее состояние ZRAM
+status () {
+    echo "[Внимание! Функция на данный момент неработоспособна, вывод доступной информации]"
+    echo
+    echo "Текущий SWAPPINESS равен" $(cat /proc/sys/vm/swappiness)
+    echo "Количество устройств ZRAM: "$(ls -l $DEVZR/| grep "zram" | wc -l)
+    swapon
+    free | grep -e всего -e Подкачка -e total -e Swap
+    echo
+#    echo "Отображение текущего состояния ZRAM"
+#    orig_data_size="0"
+#    for file in /sys/block/zram*/*_data_size ; do
+#        if [ $file = "/sys/block/zram*/*_data_size" ]; then
+#            compress_ratio="0"
+#            break
+#        fi
+#        read file_content < $file
+#        what=$(basename $file)
+#        eval "$what=\$(($what + $file_content))"
+#        compress_ratio=$(echo "scale=2; $orig_data_size / $compr_data_size" | bc)
+#    done
+#    echo "compr_data_size: $((compr_data_size / 1024)) KiB"
+#    echo "orig_data_size:  $((orig_data_size  / 1024)) KiB"
+#   echo "compression-ratio: $compress_ratio"
+}
+## end
+
+
+## Выводит справку
+help () {
+    echo
+    echo "Использование:"
+    echo "   zramswap start - [ROOT] Запускает ZRAM с оптимальной настройкой"
+    echo "   zramswap config - [ROOT] Запускает ручную настройку ZRAM"
+    echo "   zramswap stop - [ROOT] Отключает ZRAM"
+    echo "   zramswap status - Выводит текущий статус ZRAM"
+    echo "   zramswap help - Выводит данную справку"
+    echo
+}
+## end
+
+
+if [ "$1" = "start" ]; then
+    start
+elif [ "$1" = "config" ]; then
+    config
+elif [ "$1" = "stop" ]; then
+    stop
+elif [ "$1" = "status" ]; then
+    status
+elif [ "$1" = "help" ]; then
+    help
+elif [ "$1" = "" ]; then
+    echo
+    echo "Команда отсутствует. Введите «zramswap help» для получения справки"
+elif ! [ "$1" = "help" ]; then
+    echo
+    echo "Неправильная команда. Введите «zramswap help» для получения справки"
+fi
