@@ -1,11 +1,12 @@
 #!/bin/sh 
+
 #
 # МОДИФИЦИРОВАННАЯ ВЕРСИЯ
 # MY TODO:
 #   * Перепроверить функции start и stop на корректность кода
 #   * Переделать функцию config и status на обновлённый код скрипта
 #   Необязательно:
-#       - ? Сделать новую функцию определения вида ZRAM (Модуль, Вшитый или Отсутствует) ?
+#       - Внедрить функцию установки в каталог /usr/bin/ с автозаменой шебанга под текущее устройство
 #
 # TODO:
 # * Migrate to using zramctl from util-linux for the setup,
@@ -126,7 +127,7 @@ start () {
 
         PRIORITY=98    # Приоритет SWAP, смотри swapon(2) для деталей
         SWAPPINESS=100    # Свободная память, при которой ZRAM используется
-        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 )) "MBytes, SWAPPINESS=95, PRIORITY=98]"
+        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 )) "MBytes, SWAPPINESS=100, PRIORITY=98]"
 
         echo lz4 > /sys/block/zram0/comp_algorithm
         echo $ALLOCATION"K" > /sys/block/zram0/disksize
