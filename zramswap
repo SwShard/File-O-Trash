@@ -59,9 +59,12 @@ start () {
         echo "Выделение" $(( ALLOCATION / 1024 )) "MBytes памяти"
         PRIORITY=98     # Приоритет SWAP, смотри swapon(2) для деталей
         SWAPPINESS=100    # Свободная память, при которой ZRAM используется
+		echo
+        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 ))"MBytes, SWAPPINESS="$SWAPPINESS", PRIORITY=98]"
 
         ## Определение количества ядер, выставит 1 если не удастся определить
         if [ ! -f /proc/cpuinfo ]; then
+			echo
             echo "ВНИМАНИЕ: Не удалось найти /proc/cpuinfo, proc подключен?"
             echo "         Используется одно ядро для zramswap..."
             CORES=1
@@ -127,7 +130,8 @@ start () {
 
         PRIORITY=98    # Приоритет SWAP, смотри swapon(2) для деталей
         SWAPPINESS=100    # Свободная память, при которой ZRAM используется
-        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 )) "MBytes, SWAPPINESS=100, PRIORITY=98]"
+		echo
+        echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 ))"MBytes, SWAPPINESS="$SWAPPINESS", PRIORITY=98]"
 
         echo lz4 > /sys/block/zram0/comp_algorithm
         echo $ALLOCATION"K" > /sys/block/zram0/disksize
@@ -192,9 +196,12 @@ config () {
         ALLOCATION=$MEM # Количество выделенной памяти в ZRAM, в GBytes
         PRIORITY=100   # Swap priority, see swapon(2) for more details
         SWAPPINESS=$SPNS    # Свободная память, при которой ZRAM используется
+		echo
+		echo "[Параметры запуска: DISKSIZE="$ALLOCATION"GBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 
         ## Определение количества ядер, выставит 1 если не удастся определить
         if [ ! -f /proc/cpuinfo ]; then
+			echo
             echo "ВНИМАНИЕ: Не удалось найти /proc/cpuinfo, proc подключен?"
             echo "         Используется одно ядро для zramswap..."
             CORES=1
@@ -271,6 +278,8 @@ config () {
         ALLOCATION=$MEM    # Количество выделенной памяти в ZRAM, в GBytes
         PRIORITY=100    # Приоритет SWAP, смотри swapon(2) для деталей
         SWAPPINESS=$SPNS    # Свободная память, при которой ZRAM используется
+		echo
+		echo "[Параметры запуска: DISKSIZE="$ALLOCATION"GBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 
         echo lz4 > /sys/block/zram0/comp_algorithm
         echo $ALLOCATION"G" > /sys/block/zram0/disksize
