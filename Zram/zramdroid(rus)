@@ -156,7 +156,7 @@ stop () {
 	elif  [ -d $ZRDR ]; then
 		echo && echo "Требуется добавить устройство ZRAM. Используйте функцию 'addev' или 'addev max'" && echo
 	else
-		echo && echo "Модуль ZRAM не обнаружен. Ядро поддерживает ZRAM?" && echo
+		echo && echo "Встроенный модуль ZRAM не обнаружен. Ядро поддерживает ZRAM?" && echo
 	fi
 }
 ## end
