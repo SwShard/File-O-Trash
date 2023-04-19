@@ -236,7 +236,7 @@ rmdev () {
 			for ZRM in $(seq $ZNUM -1 $ZRMT); do
 				echo $ZRM > $ZRDR/hot_remove
 			done
-			echo && echo "Устройства ZRAM удалены, можно запускать ZRAM"
+			echo "Устройства ZRAM удалены, можно запускать ZRAM"
 			echo "Текущее количество устройств:" $(( $(ls /dev/block/ | grep -c zram) ))
 			echo
 		else
