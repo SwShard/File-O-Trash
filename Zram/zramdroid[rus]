@@ -7,6 +7,7 @@
 #	МОДИФИЦИРОВАННАЯ ВЕРСИЯ
 #	MY TODO:
 #		* Перепроверить функции start, config, stop, addev/max, rmdev на корректность кода
+#		* Дополнительная проверка совметимости с устройствами
 #		* Дополнительная оптимизация кода
 
 USER=$(whoami) > /dev/null 2>&1
@@ -136,6 +137,7 @@ stop () {
 		echo "Запущен скрипт остановки ZRAM"
 		echo "[Процесс может занять некоторое время]"
 		echo "[Для отмены используйте 'CTRL+C' и команду 'killall swapoff']"
+		echo
 		for ZRST in $(seq 1 $ZNUM); do
 			stopSRV &
 		done
@@ -164,7 +166,7 @@ stop () {
 addev () {
 	[ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
 	if [ -d $ZRDR ]; then
-		echo && echo "Внимание, функция находится в тестировании"
+		echo && echo "[Внимание, функция находится в тестировании]"
 		sleep 2
 		if [ "$ZNUM" -ge "$CORES" ]; then
 			echo && echo "Количество устройств ZRAM совпадает с количеством потоков процессора:"
@@ -177,7 +179,7 @@ addev () {
 				echo && echo "Добавление устройства ZRAM"
 				cat $ZRDR/hot_add > /dev/null 2>&1
 				echo && echo "Устройство ZRAM добавлено"
-				echo "Требуется перезагрузка ZRAM для применения"
+				echo "Требуется перезапуск ZRAM для применения"
 				echo "Текущее количество устройств:" $(( $ZNUM + 1 ))
 				echo
 			else
@@ -200,7 +202,7 @@ addev () {
 maxdev () {
 	[ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
 	if [ -d $ZRDR ]; then
-		echo && echo "Внимание, функция находится в тестировании"
+		echo && echo "[Внимание, функция находится в тестировании]"
 		sleep 2
 		echo && echo "Добавление устройств ZRAM"
 		for ZADD in $(seq $ZNUM $(($CORES - 1))); do
@@ -220,7 +222,7 @@ rmdev () {
 	[ "$USER" = root ] || { echo && echo "   [Эта команда требует запуск от root]"; exit 1;}
 	if [ -d $ZRDR ]; then
 		[ "$ZNUM" -gt "1" ] || { echo && echo "Требуется добавить устройство ZRAM. Используйте функцию 'addev' или 'addev max'" && echo; exit 1;}
-		echo && echo "Внимание, функция находится в тестировании"
+		echo && echo "[Внимание, функция находится в тестировании]"
 		sleep 2
 		echo && echo "Для данной функции процессы ZRAM будут остановлены"
 		sleep 2

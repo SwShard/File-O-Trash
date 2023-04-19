@@ -1,0 +1,296 @@
+#!/system/bin/sh 
+
+#
+##	LIGHTWEIGHT AND OPTIMIZED VERSION FOR ANDROID DEVICES
+##	Based on the modified ZRAM setup script "zramswap"
+#
+#	МОДИФИЦИРОВАННАЯ ВЕРСИЯ
+#	MY TODO:
+#		* Перепроверить функции start, config, stop, addev/max, rmdev на корректность кода
+#		* Дополнительная проверка совметимости с устройствами
+#		* Дополнительная оптимизация кода
+#
+
+USER=$(whoami) > /dev/null 2>&1
+DEVZR="/dev/block"
+ZRDR="/sys/class/zram-control"
+CORES=$(grep -c ^processor /proc/cpuinfo) > /dev/null 2>&1
+ZNUM=$(ls /sys/block/ | grep -c zram) > /dev/null 2>&1
+
+## Automatic setting function
+start () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ "$ZNUM" -ge "1" ]; then
+		echo
+		echo "Running ZRAM with optimal settings"
+		sleep 2
+
+		stop
+		sleep 2
+
+		echo "Setting up a new ZRAM process"
+		###Set some defaults:
+		##Automatic allocation based on RAM
+		ALLOCATION=$(awk '/MemTotal/{print $2}' /proc/meminfo)	#The amount of allocated memory in ZRAM, in KB
+
+##		#Manual memory allocation
+##		ALLOCATION=$(( 4 * 1024 * 1024 ))
+
+		PRIORITY=100	# SWAP priority
+		SWAPPINESS=80	# ZRAM work intensity value
+		echo
+		echo "[Number of detected ZRAM threads: "$ZNUM"]"
+		echo "[Launch parameters: DISKSIZE="$(( ALLOCATION / 1024 )) "MB, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
+		sleep 2
+		echo
+		echo "Starting the ZRAM process"
+		echo $SWAPPINESS > /proc/sys/vm/swappiness
+		for CORE in $(seq 0 $(($ZNUM - 1))); do
+			echo lz4 > /sys/block/zram$CORE/comp_algorithm
+			echo $(($ALLOCATION / $ZNUM))"K" > /sys/block/zram$CORE/disksize
+			mkswap $DEVZR/zram$CORE
+			swapon -p $PRIORITY $DEVZR/zram$CORE
+		done
+		echo "Execution is completed. ZRAM is launched"
+		echo
+	elif  [ -d $ZRDR ]; then
+		echo && echo "You need to add a ZRAM device. Use the 'addev' or 'addev max' function" && echo
+	else
+		echo "The built-in ZRAM module is not detected. Does the kernel support ZRAM?" && echo
+	fi
+}
+## end
+
+
+## Manual setting function
+config () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ "$ZNUM" -ge "1" ]; then
+		echo
+		echo "The ZRAM manual configuration script has been launched"
+		echo "[If the script is started by mistake, use 'CTRL+C' to cancel]"
+		sleep 3
+
+		echo
+		echo "You need to enter some parameters"
+		sleep 2
+
+		#ZRAM Settings
+		echo
+		echo "Enter the DISKSIZE value, in GB (At least 4 is recommended):"
+		echo "[Note: DISKSIZE is a value that determines the amount of memory in ZRAM]"
+		read MEM
+		echo "Selected value:" $MEM "GB"
+		sleep 2
+
+		echo
+		echo "Enter a SWAPPINESS value of 0-100 (60-80 is recommended):"
+		echo "[Note: SWAPPINESS - is the value on which the intensity of ZRAM operation depends]"
+		read SPNS
+		echo "Selected value:" $SPNS
+		sleep 2
+
+		stop
+		sleep 2
+
+		echo "Setting up a new ZRAM process"
+		##Set some defaults:
+		ALLOCATION=$(( $MEM * 1024 * 1024 ))	# The amount of allocated memory in ZRAM, in GB
+		PRIORITY=100	# SWAP priority
+		SWAPPINESS=$SPNS	# ZRAM work intensity value
+		echo
+		echo "[Number of detected ZRAM threads: "$ZNUM"]"
+		echo "[Launch parameters: DISKSIZE="$MEM "GBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
+		sleep 2
+		echo
+		echo "Starting the ZRAM process"
+		echo $SWAPPINESS > /proc/sys/vm/swappiness
+		for CORE in $(seq 0 $(($ZNUM - 1))); do
+			echo lz4 > /sys/block/zram$CORE/comp_algorithm
+			echo $(($ALLOCATION / $ZNUM))"K" > /sys/block/zram$CORE/disksize
+			mkswap $DEVZR/zram$CORE
+			swapon -p $PRIORITY $DEVZR/zram$CORE
+		done
+		echo "Execution is completed. ZRAM is launched"
+		echo
+	elif  [ -d $ZRDR ]; then
+		echo && echo "You need to add a ZRAM device. Use the 'addev' or 'addev max' function" && echo
+	else
+		echo "The built-in ZRAM module is not detected. Does the kernel support ZRAM?" && echo
+	fi
+}
+## end
+
+
+## ZRAM Multithreaded Disabling Service
+stopSRV () {
+	CORE="$(($ZRST - 1))"
+	swapoff $DEVZR/zram$CORE > /dev/null 2>&1
+	echo '1' > /sys/block/zram$CORE/reset
+	echo '0' > /sys/block/zram$CORE/disksize
+	echo "The ZRAM "$CORE" device is disabled"
+}
+## end
+## Disabling ZRAM
+stop () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ "$ZNUM" -ge "1" ]; then
+		echo
+		echo "The ZRAM stop script is running"
+		echo "[The process may take some time]"
+		echo "[To cancel, use 'CTRL+C' and the command 'killall swapoff']"
+		echo
+		for ZRST in $(seq 1 $ZNUM); do
+			stopSRV &
+		done
+		sleep 4
+		offcheck () {
+			if ! pgrep -x swapoff > /dev/null; then
+				sleep 5
+				echo "Execution is completed. ZRAM is disabled"
+				echo
+			else
+				sleep 10
+				offcheck
+			fi
+		}
+		offcheck
+	elif  [ -d $ZRDR ]; then
+		echo && echo "You need to add a ZRAM device. Use the 'addev' or 'addev max' function" && echo
+	else
+		echo && echo "The built-in ZRAM module is not detected. Does the kernel support ZRAM?" && echo
+	fi
+}
+## end
+
+
+## Adding a ZRAM device
+addev () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ -d $ZRDR ]; then
+		echo && echo "[Attention, the function is in testing]"
+		sleep 2
+		if [ "$ZNUM" -ge "$CORES" ]; then
+			echo && echo "The number of ZRAM devices is the same as the number of CPU threads:"
+			echo "CPU="$CORES";" "ZRAM="$ZNUM
+			echo "Exceeding the CPU value can lead to unstable operation of the ZRAM/device"
+			echo "Continue? [y/n]"
+			read CONFIRM
+
+			if [ "$CONFIRM" = "y" ]; then
+				echo && echo "Adding a ZRAM device"
+				cat $ZRDR/hot_add > /dev/null 2>&1
+				echo && echo "ZRAM device added"
+				echo "A restart of ZRAM is required to apply"
+				echo "Current number of devices:" $(( $ZNUM + 1 ))
+				echo
+			else
+				echo && echo "Aborted" && echo
+			fi
+		elif [ "$ZNUM" -le "$CORES" ]; then
+			echo && echo "Adding a ZRAM device"
+			cat $ZRDR/hot_add > /dev/null 2>&1
+			echo && echo "ZRAM device added"
+			echo "A restart of ZRAM is required to apply"
+			echo "Current number of devices:" $(( $ZNUM + 1 ))
+			echo
+		fi
+	else
+		echo && echo "The kernel does not support 'Hot' adding/removing ZRAM devices" && echo
+	fi
+}
+## end
+## Adding ZRAM devices by number of CPU threads
+maxdev () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ -d $ZRDR ]; then
+		echo && echo "[Attention, the function is in testing]"
+		sleep 2
+		echo && echo "Adding ZRAM devices"
+		for ZADD in $(seq $ZNUM $(($CORES - 1))); do
+			cat $ZRDR/hot_add > /dev/null 2>&1
+		done
+		echo && echo "ZRAM devices added"
+		echo "A restart of ZRAM is required to apply"
+		echo "Current number of devices:" $(( $(ls /dev/block/ | grep -c zram) ))
+		echo
+	else
+		echo && echo "The kernel does not support 'Hot' adding/removing ZRAM devices" && echo
+	fi
+}
+## end
+## Removing ZRAM devices by count
+rmdev () {
+	[ "$USER" = root ] || { echo && echo "   [This command requires running from root]"; exit 1;}
+	if [ -d $ZRDR ]; then
+		[ "$ZNUM" -gt "1" ] || { echo && echo "You need to add a ZRAM device. Use the 'addev' or 'addev max' function" && echo; exit 1;}
+		echo && echo "[Attention, the function is in testing]"
+		sleep 2
+		echo && echo "For this function, ZRAM processes will be stopped"
+		sleep 2
+		echo "You need to enter how many ZRAM devices to remove"
+		echo "Total ZRAM devices:" $ZNUM
+		echo "Available for removing" $(( $ZNUM - 1 ))":"
+		read ZCNT
+		if [ $ZCNT -le $(( $ZNUM - 1 )) ]; then
+			stop
+			ZRMT=$(( $ZNUM - ZCNT ))
+			for ZRM in $(seq $ZNUM -1 $ZRMT); do
+				echo $ZRM > $ZRDR/hot_remove
+			done
+			echo "ZRAM devices are removed, you can run ZRAM"
+			echo "Current number of devices:" $(( $(ls /dev/block/ | grep -c zram) ))
+			echo
+		else
+			echo "An incorrect/exceeding number was entered. Aborting" && echo
+		fi
+	else
+		echo && echo "The kernel does not support 'Hot' adding/removing ZRAM devices" && echo
+	fi
+}
+## end
+
+
+## Shows the current state of ZRAM
+status () {
+	echo "[Attention! The function is currently incomplete, the output of available information]"
+	echo
+	echo "Total ZRAM devices:" $ZNUM
+	echo "The current SWAPPINESS is equal to:" $(cat /proc/sys/vm/swappiness)
+	swapon
+	free | grep -e всего -e Подкачка -e total -e Swap
+	echo
+}
+## end
+
+
+## Displays help
+help () {
+	echo
+	echo "Using:"
+	echo "   zramdroid start - [ROOT] Starts ZRAM with the optimal setting"
+	echo "   zramdroid config - [ROOT] Starts the manual configuration of ZRAM"
+	echo "   zramdroid stop - [ROOT] Disables ZRAM"
+	echo "   zramdroid addev - (TEST) [ROOT] Adds a ZRAM device"
+	echo "       >>addev max - (TEST) [ROOT] Adds by the number of CPU threads"
+	echo "   zramdroid rmdev - (TEST) [ROOT] Removes the ZRAM device by count"
+	echo "   zramdroid status - Shows the current state of ZRAM"
+	echo "   zramdroid help - Displays this help"
+	echo
+}
+## end
+
+
+if [ "$1" = "start" ]; then start;
+elif [ "$1" = "config" ]; then config;
+elif [ "$1" = "stop" ]; then stop;
+elif [ "$1" = "addev" ]; then 
+	if [ "$2" = "max" ]; then maxdev; else addev; fi
+elif [ "$1" = "rmdev" ]; then rmdev;
+elif [ "$1" = "status" ]; then status;
+elif [ "$1" = "help" ]; then help;
+elif [ "$1" = "" ]; then
+	echo && echo " The command is missing. Enter 'zramdroid help' for help" && echo
+elif ! [ "$1" = "help" ]; then
+	echo && echo " Wrong command. Enter 'zramdroid help' for help" && echo
+fi
