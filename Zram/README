@@ -3,7 +3,8 @@
 [Необходимо менять шебанг (первая строка) под соответствующую платформу вручную]
 
 2. Переделанный скрипт конкретно под андроид устройства на русском языке [zramdroid(rus)]
-3. Скрипт из пункта [2], но переведённый на английский язык [zramdroid]
+3. Скрипт из пункта [2], но переведённый на английский язык [zramdroid(eng)]
+При добавлении на своё устройство следует удалить пометку языка
 ------------
 ------------
 This directory contains several scripts for configuring ZRAM:
@@ -11,4 +12,5 @@ This directory contains several scripts for configuring ZRAM:
 [It is necessary to change the shebang (first line) for the corresponding platform manually]
 
 2. A modified script specifically for android devices in Russian [zramdroid(rus)]
-3. The script from section [2], but translated into English [zramdroid]
+3. The script from section [2], but translated into English [zramdroid(eng)]
+When adding to your device, you should delete the language mark
