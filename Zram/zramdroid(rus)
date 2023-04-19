@@ -38,7 +38,7 @@ start () {
 		PRIORITY=100	# Приоритет SWAP, смотри swapon(2) для деталей
 		SWAPPINESS=80	# Значение интенсивности работы ZRAM
 		echo
-		echo "[Количество обнаруженных потоков ZRAM: "$ZNUM"]"
+		echo "[Количество обнаруженных устройств ZRAM: "$ZNUM"]"
 		echo "[Параметры запуска: DISKSIZE="$(( ALLOCATION / 1024 )) "MBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 		sleep 2
 		echo
@@ -98,7 +98,7 @@ config () {
 		PRIORITY=100	# Приоритет SWAP, смотри swapon(2) для деталей
 		SWAPPINESS=$SPNS	# Значение интенсивности работы ZRAM
 		echo
-		echo "[Количество обнаруженных потоков ZRAM: "$ZNUM"]"
+		echo "[Количество обнаруженных устройств ZRAM: "$ZNUM"]"
 		echo "[Параметры запуска: DISKSIZE="$MEM "GBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 		sleep 2
 		echo
