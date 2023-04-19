@@ -5,6 +5,7 @@
 2. Переделанный скрипт конкретно под андроид устройства на русском языке [zramdroid(rus)]
 3. Скрипт из пункта [2], но переведённый на английский язык [zramdroid]
 ------------
+------------
 This directory contains several scripts for configuring ZRAM:
 1. Universal script [zramswap] for PC and with basic support for android devices
 [It is necessary to change the shebang (first line) for the corresponding platform manually]
