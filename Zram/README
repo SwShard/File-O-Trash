@@ -1,0 +1,13 @@
+Данная директория содержит несколько скриптов для настройки ZRAM:
+1. Универсальный скрипт [zramswap] для ПК и с базовой поддержкой андроид устройств
+[Необходимо менять шебанг (первая строка) под соответствующую платформу вручную]
+
+2. Переделанный скрипт конкретно под андроид устройства на русском языке [zramdroid(rus)]
+3. Скрипт из пункта [2], но переведённый на английский язык [zramdroid]
+------------
+This directory contains several scripts for configuring ZRAM:
+1. Universal script [zramswap] for PC and with basic support for android devices
+[It is necessary to change the shebang (first line) for the corresponding platform manually]
+
+2. A modified script specifically for android devices in Russian [zramdroid(rus)]
+3. The script from section [2], but translated into English [zramdroid]
