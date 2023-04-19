@@ -39,7 +39,7 @@ start () {
 		PRIORITY=100	# SWAP priority
 		SWAPPINESS=80	# ZRAM work intensity value
 		echo
-		echo "[Number of detected ZRAM threads: "$ZNUM"]"
+		echo "[Number of detected ZRAM devices: "$ZNUM"]"
 		echo "[Launch parameters: DISKSIZE="$(( ALLOCATION / 1024 )) "MB, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 		sleep 2
 		echo
@@ -99,7 +99,7 @@ config () {
 		PRIORITY=100	# SWAP priority
 		SWAPPINESS=$SPNS	# ZRAM work intensity value
 		echo
-		echo "[Number of detected ZRAM threads: "$ZNUM"]"
+		echo "[Number of detected ZRAM devices: "$ZNUM"]"
 		echo "[Launch parameters: DISKSIZE="$MEM "GBytes, SWAPPINESS="$SWAPPINESS", PRIORITY="$PRIORITY"]"
 		sleep 2
 		echo
