@@ -226,7 +226,7 @@ rmdev () {
 		[ "$ZNUM" -gt "1" ] || { echo && echo "You need to add a ZRAM device. Use the 'addev' or 'addev max' function" && echo; exit 1;}
 		echo && echo "[Attention, the function is in testing]"
 		sleep 2
-		echo && echo "For this function, ZRAM processes will be stopped"
+		echo && echo "For this function, ZRAM processes will be stopped" && echo
 		sleep 2
 		echo "You need to enter how many ZRAM devices to remove"
 		echo "Total ZRAM devices:" $ZNUM
