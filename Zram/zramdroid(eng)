@@ -4,7 +4,7 @@
 ##	LIGHTWEIGHT AND OPTIMIZED VERSION FOR ANDROID DEVICES
 ##	Based on the modified ZRAM setup script "zramswap"
 #
-#	МОДИФИЦИРОВАННАЯ ВЕРСИЯ
+#	МОДИФИЦИРОВАННАЯ ВЕРСИЯ by SwShard
 #	MY TODO:
 #		* Перепроверить функции start, config, stop, addev/max, rmdev на корректность кода
 #		* Дополнительная проверка совметимости с устройствами
