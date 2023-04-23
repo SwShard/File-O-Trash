@@ -1,2 +1,3 @@
 # File-O-Trash
-1. The MagiskBkp and jsonMagRepo directories contain some old versions of Magisk and their update files... Just because.
+1. Всякие штуки, которые я использую для себя
+2. Скрипты настройки zram
