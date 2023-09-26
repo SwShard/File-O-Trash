@@ -1,5 +1,5 @@
 {
-  "latestVersion": "0.0.1",
+  "latestVersion": "0.0.2",
   "indexName":"Core",
   "songs": [
     {
@@ -9,6 +9,14 @@
       "speed": 1,
       "file":"https://github.com/SwShard/File-O-Trash/raw/main/dfpwm_test/Alan_Aztec-Disco_Panzer-32768.dfpwm",
       "time": 141
+    },
+    {
+      "type":"song",
+      "name":"GalaxyOnFire1-java",
+      "author": "FishLabs",
+      "speed": 1,
+      "file":"https://github.com/SwShard/File-O-Trash/raw/main/dfpwm_test/GoF-32768/GoF1J_Battle1-32768.dfpwm",
+      "time": 80
     }
   ]
 }
